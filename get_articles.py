@@ -2,20 +2,19 @@
 import feedparser
 import arxiv
 import pickle
-import twitter
+import tweepy
 from secrets import consumer_key, consumer_key_secret
 from secrets import access_token, access_token_secret
 from templates import template_str, verb_template_str
 from os.path import isfile, join
-from os import chdir, makedirs
-
+from os import chdir, makedirs, remove
+from shutil import rmtree
+from time import sleep
 from subprocess import call
 
 rss_url = "http://export.arxiv.org/rss/"
 
-subject_string = "math" #"physics.ao-ph"
-
-
+subject_string = "physics.ao-ph"
 
 
 log_file = "log.txt"
@@ -44,8 +43,11 @@ def log_lines(lines):
         else:
             log_lines(["Error Logged:", str(e)])
 
+
+
 def strip_id(idx):
-    return idx.split("/")[-1]
+    idx = idx.split("/")[-1]
+    return idx
 
 def parse_feed_list(feed_list):
     ret_list = [{} for _ in feed_list]
@@ -84,14 +86,48 @@ def gen_subject_string(item):
             ret_string += ", " + subject
     return ret_string
 
-def clean_image_files(item):
-    main_subject = item['arxiv_primary_category']['term']
 
-def generate_image(item):
+def format_tweet_string(item):
+    lines = []
+    lines.append(item['id'])
+    lines.append(gen_title_string(item))
+    lines.append(gen_author_string(item))
+    return "\n\n".join(lines)
+
+def get_tex_path(item):
     idx = strip_id(item["id"])
     path = join(root_directory, tex_dir, idx)
-    fname = idx + ".tex"
+    texname = idx + ".tex"
+    pdfname = idx + ".pdf"
+    fpath = join(path, texname)
+    return path, texname, pdfname, fpath
+
+def get_image_path(item):
+    idx = strip_id(item["id"])
+    path = join(root_directory, image_dir)
+    fname = idx + ".jpg"
     fpath = join(path, fname)
+    return path, fname, fpath
+
+def clean_image_files(item):
+    path, _, _, _ = get_tex_path(item)
+    try:
+        rmtree(path)
+    except:
+        log_lines(["Error removing tex files for id {}".format(dx)])
+    path, fname, fpath = get_image_path(item)
+    try:
+        remove(fpath)
+    except:
+        log_lines(["Error removing img files for id {}".format(dx)])
+
+
+
+
+def generate_image(item):
+
+    path, fname, pdfname, fpath = get_tex_path(item)
+    _, _, img_path = get_image_path(item)
     makedirs(path, exist_ok=True)
     title_string = gen_title_string(item)
     summary_string = gen_summary_string(item)
@@ -106,7 +142,7 @@ def generate_image(item):
     with open(fname, "w") as f:
         f.write(tex_string)
     
-    if call(["xelatex", "-interaction=batchmode", idx + ".tex"]) != 0:
+    if call(["xelatex", "-interaction=batchmode", fname]) != 0:
         escape_func = lambda x : x.translate(str.maketrans({"$":  r"\$",
                                         "_":  r"\textunderscore ",
                                         "^":  r"\^{}",
@@ -129,8 +165,8 @@ def generate_image(item):
         with open(fname, "w") as f:
             f.write(tex_string)
         
-        res = call(["xelatex", "-interaction=batchmode", idx + ".tex"])
-        log_lines(["Compilation error for id {}:".format(idx),
+        res = call(["xelatex", "-interaction=batchmode", fname])
+        log_lines(["Compilation error for id {}:".format(fname),
                    "\t Sanitized compilation exited with status {}".format(res)])
         if res != 0:
 
@@ -140,16 +176,14 @@ def generate_image(item):
                                     summary_string=summary_string.replace("\n", " "))
             with open(fname, "w") as f:
                 f.write(tex_string)
-            res = call(["xelatex", "-interaction=batchmode", idx + ".tex"])
+            res = call(["xelatex", "-interaction=batchmode", fname])
             log_lines(["\t Verbatim compilation exited with status {}".format(res)])
 
     chdir(root_directory)
-    archive_tex(idx, tex_string)
-    call(['convert', '-density', '600', join(path, idx + ".pdf"), join(image_dir, idx + ".png")])
+    archive_tex(fname, tex_string)
+    call(['convert', '-density', '600', "-background", "white", join(path, pdfname), img_path])
 
-def clean_image_files(item):
-    main_subject = item['arxiv_primary_category']['term']
-    # TODO: implement this
+
 
 def check_if_published(idx):
     try:
@@ -160,18 +194,18 @@ def check_if_published(idx):
         return False
 
 
-def register_published(id):
+def register_published(idx):
     fpath = join(root_directory, arxiv_file)
     try:
         with open(fpath, "rb") as f:
             strings = pickle.load(f)
-        strings.append(id)
+        strings.append(idx)
         with open(fpath, "wb") as f:
             pickle.dump(strings, f)
     except OSError as e:
         if not isfile(fpath):
             with open(fpath, "wb") as f:
-                pickle.dump([id], f)
+                pickle.dump([idx], f)
         else:
             log_lines(["Error Logged for id {}:".format(idx), str(e)])
 
@@ -191,35 +225,41 @@ def archive_tex(idx, string):
         else:
             log_lines(["Error Logged for id {}:".format(idx), str(e)])
 
-def get_feed_list(subject):
-    feed = feedparser.parse(rss_url + subject_string)
-    ids = [strip_id(item['id']) for item in feed['items']]
-    ids_filt = [x for x in filter(lambda idx: not check_if_published(idx), ids)]
-    results = parse_feed_list(arxiv.query(id_list=ids_filt))
-    [generate_image(item) for item in results]
 
-    print(len(results))
-
-
-    
-
-def initialize_twitter_api():
-    api = twitter.Api(consumer_key=[consumer_key],
-                      consumer_secret=[consumer_key_secret],
-                      access_token_key=[access_token],
-                      access_token_secret=[access_token_secret])
+def initialize_tweepy_api():
+    auth = tweepy.OAuthHandler(consumer_key, consumer_key_secret)
+    auth.set_access_token(access_token, access_token_secret)
+    api = tweepy.API(auth)
     return api
 
 
 
-def publish(feed_item):
-    
+def publish(feed_item, api):
+    _, _, fpath = get_image_path(feed_item)
+    tweet_text = format_tweet_string(feed_item)
+    image_path = fpath
+    status = api.update_with_media(image_path, tweet_text)
+
+def main_loop(subject):
+    feed = feedparser.parse(rss_url + subject_string)
+    ids = [strip_id(item['id']) for item in feed['items']]
+    items = parse_feed_list(arxiv.query(id_list=ids))
+    ids = [strip_id(item['id']) for item in items]
+    items = [x[0] for x in filter(lambda pair: not check_if_published(pair[1]), zip(items, ids))]
+    ids = [x for x in filter(lambda idx: not check_if_published(idx), ids)]
 
 
+    [generate_image(item) for item in items]
+    api = initialize_tweepy_api()
+    for (idx, item) in zip(ids, items):
+        publish(item, api)
+        register_published(idx)
+        sleep(2)
 
+    [clean_image_files(item) for item in items]
 
 
 if __name__ == "__main__":
     dirs = [image_dir, tex_dir]
     [makedirs(join(root_directory, dr), exist_ok=True) for dr in dirs]
-    get_feed_list(subject_string)
+    main_loop(subject_string)

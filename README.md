@@ -9,8 +9,9 @@ The file `get_articles.py` contains all of the code to
 ### Dependencies:
 * The `arxiv` packages, e.g. `pip install arxiv`
 * The feedparser packages, e.g. `pip install feedparser`
-* Twitter acct + developer account
 * Twitter api e.g. `pip install python-twitter`
+* Tweepy package e.g. `pip install tweepy`
 * xelatex + imagemagick installation.
+* Twitter acct + developer account
 
 

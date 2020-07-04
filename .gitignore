@@ -4,3 +4,4 @@ log.txt
 tex_archive.pkl
 id_archive.pkl
 secrets.py
+__pycache__
