@@ -51,13 +51,15 @@ def create_table():
         cur.execute("CREATE TABLE {} (id serial PRIMARY KEY, {} varchar);".format(table_name, column_name))
     cur.close()
     conn.commit()
+    conn.close()
 
 def drop_table():
     conn = initialize_DB()
     cur = conn.cursor()
-    cur.execute("DROP TABLE '{}';".format(table_name))
+    cur.execute("DROP TABLE {};".format(table_name))
     cur.close()
     conn.commit()
+    conn.close()
 
 def check_if_published(idx, conn):
     conn = initialize_DB()
@@ -239,7 +241,7 @@ def initialize_tweepy_api():
 def publish(feed_item, api):
     _, _, image_path = get_image_path(feed_item)
     tweet_text = format_tweet_string(feed_item)
-    print("TWEET PUBLISHED: {}".format(strip_id(feed_item['id'])))
+    log_lines(["TWEET PUBLISHED: {}".format(strip_id(feed_item['id']))])
     #status = api.update_with_media(image_path, tweet_text)
 
 def main_loop(subject):
