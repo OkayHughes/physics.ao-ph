@@ -2,6 +2,10 @@
 import feedparser
 import arxiv
 import pickle
+import twitter
+from secrets import consumer_key, consumer_key_secret
+from secrets import access_token, access_token_secret
+from templates import template_str, verb_template_str
 from os.path import isfile, join
 from os import chdir, makedirs
 
@@ -11,51 +15,7 @@ rss_url = "http://export.arxiv.org/rss/"
 
 subject_string = "math" #"physics.ao-ph"
 
-template_str = """
-\\documentclass[preview, border=10pt]{{standalone}}
-\\usepackage{{amsfonts, setspace, amsmath, amsthm,mathrsfs, amssymb, graphicx, tikz}}
-\\usepackage{{fontspec}}
-\\setmainfont{{CMU Serif}}
 
-
-\\begin{{document}}
-
-\section*{{ {title_string} }}
-
-\subsection*{{ {author_string} }}
-
-{summary_string}
-\\\\
-\\\\
-{subject_string}
-
-
-\\end{{document}}"""
-
-verb_template_str = """
-\\documentclass[preview, border=10pt]{{standalone}}
-\\usepackage{{amsfonts, setspace, amsmath, amsthm,mathrsfs, amssymb, graphicx, tikz}}
-\\usepackage{{fontspec}}
-\\usepackage{{spverbatim}}
-\\setmainfont{{CMU Serif}}
-
-\\begin{{document}}
-
-\\begin{{spverbatim}} 
-Title: 
-{title_string}
-
-Author: 
-{author_string}
-
-Summary:
-{summary_string}
-
-
-\\end{{spverbatim}}
-{subject_string}
-
-\\end{{document}}"""
 
 
 log_file = "log.txt"
@@ -243,11 +203,17 @@ def get_feed_list(subject):
 
     
 
+def initialize_twitter_api():
+    api = twitter.Api(consumer_key=[consumer_key],
+                      consumer_secret=[consumer_key_secret],
+                      access_token_key=[access_token],
+                      access_token_secret=[access_token_secret])
+    return api
 
 
 
 def publish(feed_item):
-    pass
+    
 
 
 
