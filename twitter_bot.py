@@ -12,7 +12,6 @@ from os.path import isfile, join
 from os import chdir, makedirs, remove, environ, getcwd
 from shutil import rmtree
 from time import sleep
-from subprocess import call
 
 rss_url = "http://export.arxiv.org/rss/"
 
@@ -24,7 +23,7 @@ arxiv_file = "id_archive.pkl"
 image_dir = "images/"
 pdf_dir = "pdf/"
 
-root_directory = getcwd()
+root_directory = "/app"
 
 DATABASE_URL = environ['DATABASE_URL']
 table_name = "idxs"
