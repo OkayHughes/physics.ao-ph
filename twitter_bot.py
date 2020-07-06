@@ -13,6 +13,12 @@ from os import chdir, makedirs, remove, environ, getcwd
 from shutil import rmtree
 from time import sleep
 
+
+consumer_key = environ["CONSUMER_KEY"]
+consumer_key_secret = environ["CONSUMER_KEY_SECRET"]
+access_token = environ["ACCESS_TOKEN"]
+access_token_secret = environ["ACCESS_TOKEN_SECRET"]
+
 rss_url = "http://export.arxiv.org/rss/"
 
 subject_string = "physics.ao-ph"
