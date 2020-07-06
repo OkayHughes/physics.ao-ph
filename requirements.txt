@@ -1,0 +1,5 @@
+arxiv
+feedparser
+tweepy
+psycopg2
+pymupdf
