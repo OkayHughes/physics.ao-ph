@@ -5,8 +5,6 @@ import pickle
 import tweepy
 import fitz
 import psycopg2
-from secrets import consumer_key, consumer_key_secret
-from secrets import access_token, access_token_secret
 from templates import template_str, verb_template_str
 from os.path import isfile, join
 from os import chdir, makedirs, remove, environ, getcwd
